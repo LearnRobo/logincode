@@ -75,32 +75,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Retrieve registered users
-            let users = [];
-            try {
-                users = JSON.parse(localStorage.getItem('users')) || [];
-            } catch (err) {
-                users = [];
-            }
+            // Disable button during registration
+            const submitBtn = signupForm.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
 
-            // Check if user already exists
-            const userExists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
-            if (userExists) {
-                showAlert(signupForm, 'This email address is already registered.', 'danger');
-                return;
-            }
-
-            // Save user
-            users.push({ username, email, password });
-            localStorage.setItem('users', JSON.stringify(users));
-
-            // Show temporary success state
-            showAlert(signupForm, 'Registration successful! Redirecting...', 'success');
-
-            // Redirect to login after 1.5s
-            setTimeout(() => {
-                window.location.href = 'login.html?signup=success';
-            }, 1500);
+            // Make API request to backend database
+            fetch('http://localhost:5000/api/auth/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, email, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert(signupForm, 'Registration successful! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'login.html?signup=success';
+                    }, 1500);
+                } else {
+                    showAlert(signupForm, data.message || 'Registration failed.', 'danger');
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            })
+            .catch(err => {
+                console.error('Error during registration:', err);
+                showAlert(signupForm, 'Unable to connect to the authentication server. Please ensure the backend is running.', 'danger');
+                if (submitBtn) submitBtn.disabled = false;
+            });
         });
     }
 
@@ -129,37 +132,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Retrieve registered users
-            let users = [];
-            try {
-                users = JSON.parse(localStorage.getItem('users')) || [];
-            } catch (err) {
-                users = [];
-            }
+            // Disable button during login
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
 
-            // Verify credentials
-            const matchedUser = users.find(
-                u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-            );
+            // Make API request to backend database
+            fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Save active session
+                    sessionStorage.setItem('currentUser', JSON.stringify({
+                        username: data.user.username,
+                        email: data.user.email
+                    }));
 
-            if (!matchedUser) {
-                showAlert(loginForm, 'Invalid email address or password.', 'danger');
-                return;
-            }
-
-            // Save active session
-            sessionStorage.setItem('currentUser', JSON.stringify({
-                username: matchedUser.username,
-                email: matchedUser.email
-            }));
-
-            // Show success
-            showAlert(loginForm, 'Logged in successfully! Redirecting...', 'success');
-
-            // Redirect to home after 1s
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
+                    showAlert(loginForm, 'Logged in successfully! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } else {
+                    showAlert(loginForm, data.message || 'Invalid email address or password.', 'danger');
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            })
+            .catch(err => {
+                console.error('Error during login:', err);
+                showAlert(loginForm, 'Unable to connect to the authentication server. Please ensure the backend is running.', 'danger');
+                if (submitBtn) submitBtn.disabled = false;
+            });
         });
     }
 });
