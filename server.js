@@ -15,7 +15,10 @@ app.use(express.static(__dirname));
 
 // MongoDB connection
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB database successfully.'))
+  .then(() => {
+    console.log('Connected to MongoDB database successfully.');
+    seedDefaultUser();
+  })
   .catch((err) => {
     console.error('Error connecting to MongoDB:', err.message);
     console.error('Please ensure MongoDB is installed and running locally.');
@@ -42,6 +45,30 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
+
+// Database Seeder for Default Test User
+const seedDefaultUser = async () => {
+  try {
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('password123', salt);
+      
+      const defaultUser = new User({
+        username: 'admin',
+        email: 'admin@example.com',
+        password: hashedPassword
+      });
+      
+      await defaultUser.save();
+      console.log('Seeded default user successfully:');
+      console.log('  Email: admin@example.com');
+      console.log('  Password: password123');
+    }
+  } catch (error) {
+    console.error('Error seeding default user:', error);
+  }
+};
 
 // Helper function to validate email format
 const isValidEmail = (email) => {

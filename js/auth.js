@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     showAlert(loginForm, 'Logged in successfully! Redirecting...', 'success');
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = 'products.html';
                     }, 1000);
                 } else {
                     showAlert(loginForm, data.message || 'Invalid email address or password.', 'danger');
